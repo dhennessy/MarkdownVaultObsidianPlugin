@@ -2,14 +2,32 @@ import {App, PluginSettingTab, Setting} from "obsidian";
 import MyPlugin from "./main";
 
 export interface MyPluginSettings {
-	mySetting: string;
+	vaultUuid: string;
+	apiKey: string;
+	password: string;
 }
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+	vaultUuid: "",
+	apiKey: "",
+	password: "",
+};
+
+export function getMissingRequiredSettings(settings: MyPluginSettings): string[] {
+	const missing: string[] = [];
+
+	if (!settings.vaultUuid.trim()) {
+		missing.push("Vault UUID");
+	}
+
+	if (!settings.apiKey.trim()) {
+		missing.push("API key");
+	}
+
+	return missing;
 }
 
-export class SampleSettingTab extends PluginSettingTab {
+export class MarkdownVaultSettingTab extends PluginSettingTab {
 	plugin: MyPlugin;
 
 	constructor(app: App, plugin: MyPlugin) {
@@ -23,14 +41,40 @@ export class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
+			.setName("Vault UUID")
+			.setDesc("Unique ID of the vault in MarkdownVault.")
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder("Enter your vault UUID")
+				.setValue(this.plugin.settings.vaultUuid)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.vaultUuid = value.trim();
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName("API key")
+			.setDesc("API key used to authenticate MarkdownVault API requests.")
+			.addText(text => text
+				.setPlaceholder("Enter your API key")
+				.setValue(this.plugin.settings.apiKey)
+				.onChange(async (value) => {
+					this.plugin.settings.apiKey = value.trim();
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName("Password")
+			.setDesc("Optional password required to access published content.")
+			.addText(text => {
+				text.inputEl.type = "password";
+
+				return text
+					.setPlaceholder("Optional password")
+					.setValue(this.plugin.settings.password)
+					.onChange(async (value) => {
+						this.plugin.settings.password = value;
+						await this.plugin.saveSettings();
+					});
+			});
 	}
 }

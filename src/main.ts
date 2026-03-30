@@ -1,5 +1,10 @@
 import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import {
+	DEFAULT_SETTINGS,
+	getMissingRequiredSettings,
+	MarkdownVaultSettingTab,
+	MyPluginSettings
+} from "./settings";
 
 // Remember to rename these classes and interfaces!
 
@@ -25,6 +30,16 @@ export default class MyPlugin extends Plugin {
 			name: 'Open modal (simple)',
 			callback: () => {
 				new SampleModal(this.app).open();
+			}
+		});
+
+		this.addCommand({
+			id: "validate-markdownvault-settings",
+			name: "Validate MarkdownVault settings",
+			callback: () => {
+				if (this.ensureRequiredSettingsConfigured()) {
+					new Notice("MarkdownVault settings look good.");
+				}
 			}
 		});
 		// This adds an editor command that can perform some operation on the current editor instance
@@ -57,7 +72,7 @@ export default class MyPlugin extends Plugin {
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new MarkdownVaultSettingTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -79,6 +94,23 @@ export default class MyPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	ensureRequiredSettingsConfigured(showNotice = true): boolean {
+		const missing = getMissingRequiredSettings(this.settings);
+
+		if (missing.length === 0) {
+			return true;
+		}
+
+		if (showNotice) {
+			new Notice(
+				`Missing required MarkdownVault settings: ${missing.join(", ")}. ` +
+				"Set them in Settings -> Community plugins -> MarkdownVault Publish."
+			);
+		}
+
+		return false;
 	}
 }
 
