@@ -4,13 +4,11 @@ import MyPlugin from "./main";
 export interface MyPluginSettings {
 	vaultUuid: string;
 	apiKey: string;
-	password: string;
 }
 
 export const DEFAULT_SETTINGS: MyPluginSettings = {
 	vaultUuid: "",
 	apiKey: "",
-	password: "",
 };
 
 export function getMissingRequiredSettings(settings: MyPluginSettings): string[] {
@@ -62,19 +60,5 @@ export class MarkdownVaultSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
-			.setName("Password")
-			.setDesc("Optional password required to access published content.")
-			.addText(text => {
-				text.inputEl.type = "password";
-
-				return text
-					.setPlaceholder("Optional password")
-					.setValue(this.plugin.settings.password)
-					.onChange(async (value) => {
-						this.plugin.settings.password = value;
-						await this.plugin.saveSettings();
-					});
-			});
 	}
 }

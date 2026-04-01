@@ -1,4 +1,6 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
+import JSZip from "jszip";
+import { Notice, Plugin } from "obsidian";
+import { VaultApiClient } from "./api";
 import {
 	DEFAULT_SETTINGS,
 	getMissingRequiredSettings,
@@ -6,86 +8,22 @@ import {
 	MyPluginSettings
 } from "./settings";
 
-// Remember to rename these classes and interfaces!
-
-export default class MyPlugin extends Plugin {
+export default class MarkdownVaultPlugin extends Plugin {
 	settings: MyPluginSettings;
+	private isPublishing = false;
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
+			id: "publish-vault",
+			name: "Publish Vault",
+			callback: async () => {
+				await this.publishVault();
 			}
 		});
 
-		this.addCommand({
-			id: "validate-markdownvault-settings",
-			name: "Validate MarkdownVault settings",
-			callback: () => {
-				if (this.ensureRequiredSettingsConfigured()) {
-					new Notice("MarkdownVault settings look good.");
-				}
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new MarkdownVaultSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
-	}
-
-	onunload() {
 	}
 
 	async loadSettings() {
@@ -112,20 +50,132 @@ export default class MyPlugin extends Plugin {
 
 		return false;
 	}
+
+	private async publishVault(): Promise<void> {
+		if (this.isPublishing) {
+			new Notice("Vault publishing is already in progress.");
+			return;
+		}
+
+		if (!this.ensureRequiredSettingsConfigured()) {
+			return;
+		}
+
+		this.isPublishing = true;
+
+		const vaultUuid = this.settings.vaultUuid.trim();
+		const api = new VaultApiClient({
+			apiKey: this.settings.apiKey.trim(),
+			vaultPassword: undefined
+		});
+
+		let uploadUuid: string | undefined;
+		let completeUploadCalled = false;
+
+		try {
+			new Notice("Preparing vault archive...");
+			const zipBytes = await this.buildVaultArchive();
+			const zipFilename = `${vaultUuid}.zip`;
+
+			new Notice(`Archive prepared (${formatBytes(zipBytes.length)}). Creating upload...`);
+			const upload = await api.createUpload(vaultUuid, {
+				filename: zipFilename,
+				contentType: "application/zip",
+				sizeBytes: zipBytes.length
+			});
+			uploadUuid = upload.uploadUuid;
+
+			if (upload.partSize <= 0) {
+				throw new Error("Server returned invalid part size.");
+			}
+
+			const partCount = Math.ceil(zipBytes.length / upload.partSize);
+			if (partCount > upload.maxParts) {
+				throw new Error(
+					`Archive requires ${partCount} parts, but server allows at most ${upload.maxParts}.`
+				);
+			}
+
+			const partNumbers = Array.from({ length: partCount }, (_, index) => index + 1);
+			new Notice(`Requesting upload URLs for ${partNumbers.length} parts...`);
+			const uploadParts = await api.createUploadParts(vaultUuid, uploadUuid, { partNumbers });
+			const uploadPartByNumber = new Map(uploadParts.parts.map(part => [part.partNumber, part]));
+			const completedParts: { partNumber: number; etag: string }[] = [];
+
+			for (const partNumber of partNumbers) {
+				const uploadPart = uploadPartByNumber.get(partNumber);
+				if (!uploadPart) {
+					throw new Error(`Server did not return a URL for part ${partNumber}.`);
+				}
+
+				const offset = (partNumber - 1) * upload.partSize;
+				const chunk = zipBytes.slice(offset, Math.min(offset + upload.partSize, zipBytes.length));
+				const putResponse = await fetch(uploadPart.url, {
+					method: "PUT",
+					body: chunk
+				});
+
+				if (!putResponse.ok) {
+					throw new Error(`Upload failed for part ${partNumber} (HTTP ${putResponse.status}).`);
+				}
+
+				const etag = putResponse.headers.get("etag");
+				if (!etag) {
+					throw new Error(`Upload part ${partNumber} did not return an ETag.`);
+				}
+
+				completedParts.push({ partNumber, etag });
+			}
+
+			completeUploadCalled = true;
+			new Notice("Finalizing publish...");
+			await api.completeUpload(vaultUuid, uploadUuid, { parts: completedParts });
+			new Notice("Vault published.");
+		} catch (error: unknown) {
+			if (uploadUuid && !completeUploadCalled) {
+				try {
+					await api.abandonUpload(vaultUuid, uploadUuid);
+				} catch {
+					// Ignore abandon failures and preserve the original error.
+				}
+			}
+
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			new Notice(`Publish failed: ${errorMessage}`);
+		} finally {
+			this.isPublishing = false;
+		}
+	}
+
+	private async buildVaultArchive(): Promise<Uint8Array> {
+		const zip = new JSZip();
+		const files = this.app.vault.getFiles().filter((file) => !isDotPath(file.path));
+
+		for (const file of files) {
+			const fileBytes = await this.app.vault.readBinary(file);
+			zip.file(file.path, fileBytes);
+		}
+
+		return zip.generateAsync({
+			type: "uint8array",
+			compression: "DEFLATE",
+			compressionOptions: { level: 6 }
+		});
+	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+function isDotPath(path: string): boolean {
+	return path.split("/").some((segment) => segment.startsWith("."));
+}
+
+function formatBytes(value: number): string {
+	if (value < 1024) {
+		return `${value} B`;
 	}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
+	if (value < 1024 * 1024) {
+		return `${(value / 1024).toFixed(1)} KB`;
 	}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
+	return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }

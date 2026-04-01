@@ -94,7 +94,7 @@ export class VaultApiClient {
   }): Promise<T> {
     const headers = new Headers();
     if (this.vaultPassword) {
-      headers.set("Vault-Password", this.vaultPassword);
+      headers.set("vault_password", this.vaultPassword);
     }
     if (this.apiKey) {
       headers.set("authorization", `Bearer ${this.apiKey}`);
