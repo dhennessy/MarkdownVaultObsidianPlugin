@@ -15,9 +15,13 @@ export default class MarkdownVaultPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
+		this.addRibbonIcon('smartphone', 'Publish to MarkdownVault', (evt: MouseEvent) => {
+			this.publishVault();
+		});
+
 		this.addCommand({
 			id: "publish-vault",
-			name: "Publish Vault",
+			name: "Publish",
 			callback: async () => {
 				await this.publishVault();
 			}
