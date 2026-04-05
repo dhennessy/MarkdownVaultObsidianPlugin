@@ -33,7 +33,7 @@ export class VaultApiClient {
   private readonly apiKey?: string;
 
   constructor(options: ApiClientOptions = {}) {
-    this.baseUrl = (options.baseUrl ?? "http://localhost:8000/v1").replace(/\/$/, "");
+    this.baseUrl = (options.baseUrl ?? "https://api.markdownvault.com/v1").replace(/\/$/, "");
     this.vaultPassword = options.vaultPassword;
     this.apiKey = options.apiKey;
   }
