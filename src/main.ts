@@ -1,3 +1,5 @@
+/* eslint-disable obsidianmd/ui/sentence-case */
+
 import JSZip from "jszip";
 import { Notice, Plugin, requestUrl } from "obsidian";
 import { VaultApiClient } from "./api";
@@ -15,13 +17,13 @@ export default class MarkdownVaultPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-			this.addRibbonIcon(
-				"smartphone",
-				"Publish to Markdown Vault",
-				(evt: MouseEvent) => {
-					void this.publishVault();
-				},
-			);
+		this.addRibbonIcon(
+			"smartphone",
+			"Publish to MarkdownVault",
+			(evt: MouseEvent) => {
+				void this.publishVault();
+			},
+		);
 
 		this.addCommand({
 			id: "publish-vault",

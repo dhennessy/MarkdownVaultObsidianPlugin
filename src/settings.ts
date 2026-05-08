@@ -1,3 +1,5 @@
+/* eslint-disable obsidianmd/ui/sentence-case */
+
 import { App, PluginSettingTab, Setting } from "obsidian";
 import MyPlugin from "./main";
 
@@ -42,7 +44,7 @@ export class MarkdownVaultSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Vault UUID")
-			.setDesc("Unique ID of the vault in Markdown Vault.")
+			.setDesc("Unique ID of the vault in MarkdownVault.")
 			.addText((text) =>
 				text
 					.setPlaceholder("Enter your vault UUID")
@@ -55,9 +57,7 @@ export class MarkdownVaultSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("API key")
-			.setDesc(
-				"API key used to authenticate Markdown Vault API requests.",
-			)
+			.setDesc("API key used to authenticate MarkdownVault API requests.")
 			.addText((text) =>
 				text
 					.setPlaceholder("Enter your API key")
