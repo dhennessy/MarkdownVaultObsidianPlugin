@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { Notice, Plugin } from "obsidian";
+import { Notice, Plugin, requestUrl } from "obsidian";
 import { VaultApiClient } from "./api";
 import {
 	DEFAULT_SETTINGS,
@@ -114,16 +114,21 @@ export default class MarkdownVaultPlugin extends Plugin {
 
 				const offset = (partNumber - 1) * upload.partSize;
 				const chunk = zipBytes.slice(offset, Math.min(offset + upload.partSize, zipBytes.length));
-				const putResponse = await fetch(uploadPart.url, {
+				const putResponse = await requestUrl({
+					url: uploadPart.url,
 					method: "PUT",
-					body: chunk
+					body: chunk.buffer.slice(
+						chunk.byteOffset,
+						chunk.byteOffset + chunk.byteLength
+					),
+					throw: false
 				});
 
-				if (!putResponse.ok) {
+				if (putResponse.status < 200 || putResponse.status >= 300) {
 					throw new Error(`Upload failed for part ${partNumber} (HTTP ${putResponse.status}).`);
 				}
 
-				const etag = putResponse.headers.get("etag");
+				const etag = putResponse.headers.etag ?? putResponse.headers.ETag;
 				if (!etag) {
 					throw new Error(`Upload part ${partNumber} did not return an ETag.`);
 				}

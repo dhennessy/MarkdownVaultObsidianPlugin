@@ -9,6 +9,7 @@ import type {
   VaultAccessErrorSchema,
   VaultSchema,
 } from "./types.js";
+import { requestUrl } from "obsidian";
 
 export class ApiError extends Error {
   constructor(
@@ -92,34 +93,36 @@ export class VaultApiClient {
     method: "GET" | "POST";
     body?: unknown;
   }): Promise<T> {
-    const headers = new Headers();
+    const headers: Record<string, string> = {};
     if (this.vaultPassword) {
-      headers.set("vault_password", this.vaultPassword);
+      headers.vault_password = this.vaultPassword;
     }
     if (this.apiKey) {
-      headers.set("authorization", `Bearer ${this.apiKey}`);
-      headers.set("x-api-key", this.apiKey);
+      headers.authorization = `Bearer ${this.apiKey}`;
+      headers["x-api-key"] = this.apiKey;
     }
 
     let body: string | undefined;
     if (options.body !== undefined) {
-      headers.set("content-type", "application/json");
+      headers["content-type"] = "application/json";
       body = JSON.stringify(options.body);
     }
 
-    let response: Response;
+    let response: { status: number; text: string };
     try {
-      response = await fetch(`${this.baseUrl}${options.path}`, {
+      response = await requestUrl({
+        url: `${this.baseUrl}${options.path}`,
         method: options.method,
         headers,
         body,
+        throw: false,
       });
     } catch (error: unknown) {
       throw new Error(`Request failed: ${describeNetworkError(error)}`);
     }
 
     const parsedBody = await parseJson(response);
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       const detail = getErrorDetail(parsedBody);
       throw new ApiError(
         detail ? `Request failed: ${detail}` : `Request failed (${response.status})`,
@@ -158,8 +161,8 @@ function getErrorDetail(body: unknown): string | undefined {
   return candidate.detail;
 }
 
-async function parseJson(response: Response): Promise<unknown> {
-  const text = await response.text();
+async function parseJson(response: { text: string }): Promise<unknown> {
+  const { text } = response;
   if (!text) {
     return undefined;
   }
