@@ -5,7 +5,7 @@ import {
 	DEFAULT_SETTINGS,
 	getMissingRequiredSettings,
 	MarkdownVaultSettingTab,
-	MyPluginSettings
+	MyPluginSettings,
 } from "./settings";
 
 export default class MarkdownVaultPlugin extends Plugin {
@@ -15,23 +15,31 @@ export default class MarkdownVaultPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		this.addRibbonIcon('smartphone', 'Publish to MarkdownVault', (evt: MouseEvent) => {
-			this.publishVault();
-		});
+		this.addRibbonIcon(
+			"smartphone",
+			"Publish to Markdown Vault",
+			(evt: MouseEvent) => {
+				this.publishVault();
+			},
+		);
 
 		this.addCommand({
 			id: "publish-vault",
 			name: "Publish",
 			callback: async () => {
 				await this.publishVault();
-			}
+			},
 		});
 
 		this.addSettingTab(new MarkdownVaultSettingTab(this.app, this));
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			(await this.loadData()) as Partial<MyPluginSettings>,
+		);
 	}
 
 	async saveSettings() {
@@ -48,7 +56,7 @@ export default class MarkdownVaultPlugin extends Plugin {
 		if (showNotice) {
 			new Notice(
 				`Missing required MarkdownVault settings: ${missing.join(", ")}. ` +
-				"Set them in Settings -> Community plugins -> MarkdownVault Publish."
+					"Set them in Settings -> Community plugins -> MarkdownVault Publish.",
 			);
 		}
 
@@ -70,7 +78,7 @@ export default class MarkdownVaultPlugin extends Plugin {
 		const vaultUuid = this.settings.vaultUuid.trim();
 		const api = new VaultApiClient({
 			apiKey: this.settings.apiKey.trim(),
-			vaultPassword: undefined
+			vaultPassword: undefined,
 		});
 
 		let uploadUuid: string | undefined;
@@ -81,11 +89,13 @@ export default class MarkdownVaultPlugin extends Plugin {
 			const zipBytes = await this.buildVaultArchive();
 			const zipFilename = `${vaultUuid}.zip`;
 
-			new Notice(`Archive prepared (${formatBytes(zipBytes.length)}). Creating upload...`);
+			new Notice(
+				`Archive prepared (${formatBytes(zipBytes.length)}). Creating upload...`,
+			);
 			const upload = await api.createUpload(vaultUuid, {
 				filename: zipFilename,
 				contentType: "application/zip",
-				sizeBytes: zipBytes.length
+				sizeBytes: zipBytes.length,
 			});
 			uploadUuid = upload.uploadUuid;
 
@@ -96,41 +106,62 @@ export default class MarkdownVaultPlugin extends Plugin {
 			const partCount = Math.ceil(zipBytes.length / upload.partSize);
 			if (partCount > upload.maxParts) {
 				throw new Error(
-					`Archive requires ${partCount} parts, but server allows at most ${upload.maxParts}.`
+					`Archive requires ${partCount} parts, but server allows at most ${upload.maxParts}.`,
 				);
 			}
 
-			const partNumbers = Array.from({ length: partCount }, (_, index) => index + 1);
-			new Notice(`Requesting upload URLs for ${partNumbers.length} parts...`);
-			const uploadParts = await api.createUploadParts(vaultUuid, uploadUuid, { partNumbers });
-			const uploadPartByNumber = new Map(uploadParts.parts.map(part => [part.partNumber, part]));
+			const partNumbers = Array.from(
+				{ length: partCount },
+				(_, index) => index + 1,
+			);
+			new Notice(
+				`Requesting upload URLs for ${partNumbers.length} parts...`,
+			);
+			const uploadParts = await api.createUploadParts(
+				vaultUuid,
+				uploadUuid,
+				{ partNumbers },
+			);
+			const uploadPartByNumber = new Map(
+				uploadParts.parts.map((part) => [part.partNumber, part]),
+			);
 			const completedParts: { partNumber: number; etag: string }[] = [];
 
 			for (const partNumber of partNumbers) {
 				const uploadPart = uploadPartByNumber.get(partNumber);
 				if (!uploadPart) {
-					throw new Error(`Server did not return a URL for part ${partNumber}.`);
+					throw new Error(
+						`Server did not return a URL for part ${partNumber}.`,
+					);
 				}
 
 				const offset = (partNumber - 1) * upload.partSize;
-				const chunk = zipBytes.slice(offset, Math.min(offset + upload.partSize, zipBytes.length));
+				const chunk = zipBytes.slice(
+					offset,
+					Math.min(offset + upload.partSize, zipBytes.length),
+				);
 				const putResponse = await requestUrl({
 					url: uploadPart.url,
 					method: "PUT",
 					body: chunk.buffer.slice(
 						chunk.byteOffset,
-						chunk.byteOffset + chunk.byteLength
+						chunk.byteOffset + chunk.byteLength,
 					),
-					throw: false
+					throw: false,
 				});
 
 				if (putResponse.status < 200 || putResponse.status >= 300) {
-					throw new Error(`Upload failed for part ${partNumber} (HTTP ${putResponse.status}).`);
+					throw new Error(
+						`Upload failed for part ${partNumber} (HTTP ${putResponse.status}).`,
+					);
 				}
 
-				const etag = putResponse.headers.etag ?? putResponse.headers.ETag;
+				const etag =
+					putResponse.headers.etag ?? putResponse.headers.ETag;
 				if (!etag) {
-					throw new Error(`Upload part ${partNumber} did not return an ETag.`);
+					throw new Error(
+						`Upload part ${partNumber} did not return an ETag.`,
+					);
 				}
 
 				completedParts.push({ partNumber, etag });
@@ -138,7 +169,9 @@ export default class MarkdownVaultPlugin extends Plugin {
 
 			completeUploadCalled = true;
 			new Notice("Finalizing publish...");
-			await api.completeUpload(vaultUuid, uploadUuid, { parts: completedParts });
+			await api.completeUpload(vaultUuid, uploadUuid, {
+				parts: completedParts,
+			});
 			new Notice("Vault published.");
 		} catch (error: unknown) {
 			if (uploadUuid && !completeUploadCalled) {
@@ -149,7 +182,8 @@ export default class MarkdownVaultPlugin extends Plugin {
 				}
 			}
 
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
 			new Notice(`Publish failed: ${errorMessage}`);
 		} finally {
 			this.isPublishing = false;
@@ -158,7 +192,9 @@ export default class MarkdownVaultPlugin extends Plugin {
 
 	private async buildVaultArchive(): Promise<Uint8Array> {
 		const zip = new JSZip();
-		const files = this.app.vault.getFiles().filter((file) => !isDotPath(file.path));
+		const files = this.app.vault
+			.getFiles()
+			.filter((file) => !isDotPath(file.path));
 
 		for (const file of files) {
 			const fileBytes = await this.app.vault.readBinary(file);
@@ -168,7 +204,7 @@ export default class MarkdownVaultPlugin extends Plugin {
 		return zip.generateAsync({
 			type: "uint8array",
 			compression: "DEFLATE",
-			compressionOptions: { level: 6 }
+			compressionOptions: { level: 6 },
 		});
 	}
 }

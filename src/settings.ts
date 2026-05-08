@@ -1,4 +1,4 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import MyPlugin from "./main";
 
 export interface MyPluginSettings {
@@ -11,7 +11,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	apiKey: "",
 };
 
-export function getMissingRequiredSettings(settings: MyPluginSettings): string[] {
+export function getMissingRequiredSettings(
+	settings: MyPluginSettings,
+): string[] {
 	const missing: string[] = [];
 
 	if (!settings.vaultUuid.trim()) {
@@ -34,31 +36,36 @@ export class MarkdownVaultSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
 		new Setting(containerEl)
 			.setName("Vault UUID")
-			.setDesc("Unique ID of the vault in MarkdownVault.")
-			.addText(text => text
-				.setPlaceholder("Enter your vault UUID")
-				.setValue(this.plugin.settings.vaultUuid)
-				.onChange(async (value) => {
-					this.plugin.settings.vaultUuid = value.trim();
-					await this.plugin.saveSettings();
-				}));
+			.setDesc("Unique ID of the vault in Markdown Vault.")
+			.addText((text) =>
+				text
+					.setPlaceholder("Enter your vault UUID")
+					.setValue(this.plugin.settings.vaultUuid)
+					.onChange(async (value) => {
+						this.plugin.settings.vaultUuid = value.trim();
+						await this.plugin.saveSettings();
+					}),
+			);
 
 		new Setting(containerEl)
 			.setName("API key")
-			.setDesc("API key used to authenticate MarkdownVault API requests.")
-			.addText(text => text
-				.setPlaceholder("Enter your API key")
-				.setValue(this.plugin.settings.apiKey)
-				.onChange(async (value) => {
-					this.plugin.settings.apiKey = value.trim();
-					await this.plugin.saveSettings();
-				}));
-
+			.setDesc(
+				"API key used to authenticate Markdown Vault API requests.",
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("Enter your API key")
+					.setValue(this.plugin.settings.apiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.apiKey = value.trim();
+						await this.plugin.saveSettings();
+					}),
+			);
 	}
 }
