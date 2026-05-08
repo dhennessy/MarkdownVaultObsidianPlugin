@@ -1,7 +1,7 @@
 {
 	"id": "markdownvault",
 	"name": "MarkdownVault",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"minAppVersion": "0.15.0",
 	"description": "Publish your notes directly to an app on your user's phones. Requires a free account at https://markdownvault.com.",
 	"author": "Denis Hennessy",

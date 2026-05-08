@@ -1,6 +1,6 @@
 {
 	"name": "markdownvault",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Publish your notes directly to an app on your user's phones. Requires a free account at https://markdownvault.com",
 	"main": "main.js",
 	"type": "module",
