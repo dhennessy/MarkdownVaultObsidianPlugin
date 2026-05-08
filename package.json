@@ -1,5 +1,5 @@
 {
-	"name": "markdownvault-publish",
+	"name": "markdownvault",
 	"version": "1.0.0",
 	"description": "Publish your notes directly to an app on your user's phones. Requires a free account at https://markdownvault.com",
 	"main": "main.js",
