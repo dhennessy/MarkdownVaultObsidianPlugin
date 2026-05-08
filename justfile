@@ -18,17 +18,6 @@ update-version version='patch': _ensure-git-clean (_ensure-git-branch "main")
     npm version {{version}}
     @echo main branch updated to `node -p 'require("./manifest.json").version'`
 
-# Make a release from current `main` branch
-make-release: _ensure-git-clean (_ensure-git-branch "main")
-    git tag -f -m "" {{marketing-version}}
-    git push
-    @echo "Release {{marketing-version}} is published."
-
-# Update release from current `main` branch (and move tag)
-update-release: _ensure-git-clean (_ensure-git-branch "main") && make-release
-    git tag -d {{marketing-version}}
-    git push origin --delete {{marketing-version}}
-
 # Helper GIT targets
 
 # Warn and exit if the current git branch is not the one specified (e.g. (ensure-git-branch "main"))
