@@ -121,7 +121,7 @@ export class VaultApiClient {
       throw new Error(`Request failed: ${describeNetworkError(error)}`);
     }
 
-    const parsedBody = await parseJson(response);
+    const parsedBody = parseJson(response);
     if (response.status < 200 || response.status >= 300) {
       const detail = getErrorDetail(parsedBody);
       throw new ApiError(
@@ -161,7 +161,7 @@ function getErrorDetail(body: unknown): string | undefined {
   return candidate.detail;
 }
 
-async function parseJson(response: { text: string }): Promise<unknown> {
+function parseJson(response: { text: string }): unknown {
   const { text } = response;
   if (!text) {
     return undefined;
