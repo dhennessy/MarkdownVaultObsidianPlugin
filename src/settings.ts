@@ -1,18 +1,18 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import MyPlugin from "./main";
 
-export interface MyPluginSettings {
+export interface MarkdownVaultSettings {
 	vaultUuid: string;
 	apiKey: string;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
+export const DEFAULT_SETTINGS: MarkdownVaultSettings = {
 	vaultUuid: "",
 	apiKey: "",
 };
 
 export function getMissingRequiredSettings(
-	settings: MyPluginSettings,
+	settings: MarkdownVaultSettings,
 ): string[] {
 	const missing: string[] = [];
 

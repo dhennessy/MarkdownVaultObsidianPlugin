@@ -5,11 +5,11 @@ import {
 	DEFAULT_SETTINGS,
 	getMissingRequiredSettings,
 	MarkdownVaultSettingTab,
-	MyPluginSettings,
+	MarkdownVaultSettings,
 } from "./settings";
 
 export default class MarkdownVaultPlugin extends Plugin {
-	settings: MyPluginSettings;
+	settings: MarkdownVaultSettings;
 	private isPublishing = false;
 
 	async onload() {
@@ -38,7 +38,7 @@ export default class MarkdownVaultPlugin extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<MyPluginSettings>,
+			(await this.loadData()) as Partial<MarkdownVaultSettings>,
 		);
 	}
 
