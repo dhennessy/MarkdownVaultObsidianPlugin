@@ -14,8 +14,8 @@ _default:
     @just --list
 
 # Update version of plugin (specify version as patch/minor/major or x.y.z)
-update-version version='patch':
-    @echo npm version {{version}}
+update-version version='patch': _ensure-git-clean (_ensure-git-branch "main")
+    npm version {{version}}
     @echo main branch updated to `node -p 'require("./manifest.json").version'`
 
 # Make a release from current `main` branch
