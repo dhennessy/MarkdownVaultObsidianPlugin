@@ -1,5 +1,3 @@
-/* eslint-disable obsidianmd/ui/sentence-case */
-
 import JSZip from "jszip";
 import { Notice, Plugin, requestUrl } from "obsidian";
 import { VaultApiClient } from "./api";

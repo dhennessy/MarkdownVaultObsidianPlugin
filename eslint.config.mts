@@ -1,27 +1,37 @@
-import tseslint from 'typescript-eslint';
+import tseslint from "typescript-eslint";
 import obsidianmd from "eslint-plugin-obsidianmd";
 import globals from "globals";
 import { globalIgnores } from "eslint/config";
 
 export default tseslint.config(
+	...obsidianmd.configs.recommended,
 	{
+		plugins: {
+			obsidianmd,
+		},
 		languageOptions: {
 			globals: {
 				...globals.browser,
 			},
 			parserOptions: {
 				projectService: {
-					allowDefaultProject: [
-						'eslint.config.js',
-						'manifest.json'
-					]
+					allowDefaultProject: ["eslint.config.js", "manifest.json"],
 				},
 				tsconfigRootDir: import.meta.dirname,
-				extraFileExtensions: ['.json']
+				extraFileExtensions: [".json"],
 			},
 		},
+		rules: {
+			"obsidianmd/ui/sentence-case": [
+				"error",
+				{
+					brands: ["MarkdownVault", "Markdown Vault"],
+					acronyms: ["API", "UUID", "ID"],
+					enforceCamelCaseLower: true,
+				},
+			],
+		},
 	},
-	...obsidianmd.configs.recommended,
 	globalIgnores([
 		"node_modules",
 		"dist",

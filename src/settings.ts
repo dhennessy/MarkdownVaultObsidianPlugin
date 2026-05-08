@@ -1,5 +1,3 @@
-/* eslint-disable obsidianmd/ui/sentence-case */
-
 import { App, PluginSettingTab, Setting } from "obsidian";
 import MyPlugin from "./main";
 
