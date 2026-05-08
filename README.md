@@ -1,6 +1,13 @@
 # Markdown Vault Obsidian Plugin
 
-This is a plugin for Obsidian (https://obsidian.md) to allow you easily publish your vault to Markdown Vault (https://markdownvault.com).
+This is a plugin for Obsidian (https://obsidian.md) to allow you easily publish your vault to Markdown Vault (https://markdownvault.com),
+which in turn makes your notes available on a dedicated iOS app (also called Markdown Vault). Your published vault has a special
+'sharing link' which you can share with your users so that they can easily download and view your content.
+
+To use the plugin, you'll need to create a free account at https://markdownvault.com. There are also some optional features
+such as password protection that requires a paid subscription.
+
+
 
 Additional documentation at https://docs.markdownvault.com/obsidian
 
@@ -64,7 +71,7 @@ Quick starting guide for plugin devs:
 
 ## Manually installing the plugin
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/MarkdownVaultObsidianPlugin/`.
+- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/markdownvault/`.
 
 ## Improve code quality with eslint
 - [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
@@ -72,6 +79,8 @@ Quick starting guide for plugin devs:
 - Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
 - A GitHub action is preconfigured to automatically lint every commit on all branches.
 
-## API Documentation
+## Additional links
 
-See https://docs.obsidian.md
+Main Website: https://markdownvault.com
+Documentation: https://docs/markdownvault.com
+Privacy Policy: https://markdownvault.com/privacy/
